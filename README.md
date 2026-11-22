@@ -336,21 +336,18 @@ Reconciliation executed against the supplied CSV datasets:
 ## 14. How I Worked With the AI Agent
 
 ### Development Collaboration
-The project was constructed iteratively through structured phases:
-1. **Inspection First**: Before writing any models or code, the CSV files were scanned using a Python analysis script to inventory anomalies (Indian formatting, lowercase references, blank fields, cross-tenant mismatches, split transactions).
-2. **Modular Architecture**: Built the pure comparison engine (`reconcile/comparison.py`) completely independent of Django HTTP layers so it could be tested in isolation.
-3. **Continuous Automated Verification**: Each phase was followed by automated test execution, asserting exact Decimal numbers rather than mock approximations.
+I worked on this project step by step with the help of an AI agent. I didn't just ask it to generate the entire application at once. I first understood the data and then worked on each part separately.
+1. Understanding the data: Before starting the implementation, I checked the CSV files using Python to understand what kind of data they contained and what problems needed to be handled. I found issues like different number formats, inconsistent references, blank values, duplicate entries and split transactions.
+2. Building the logic separately: I worked on the comparison logic in reconcile/comparison.py separately from the Django API. This made it easier to understand the business rules and test them without depending on the frontend or API.
+3. Testing along the way: After implementing each major part, I ran the tests and checked the results. I paid particular attention to financial calculations and used Decimal values to avoid floating-point accuracy issues.
 
 ### Assessment Questions
 
 #### A. Name one thing the AI agent got wrong. How did you notice?
-<!-- CANDIDATE PLACEHOLDER: Fill in your specific observation here before submission -->
-*Placeholder:* [During the initial test setup, the importer test asserted that an unparseable reference without digits (`"recdirty"`) would be normalized to `"REC-DIRTY"`. I noticed this when pytest failed with `AssertionError: assert None == 'REC-DIRTY'`. Reviewing the specification confirmed that references lacking identifiable digits must return `None` (classifying them as orphan entries), so the test assertion was corrected to accurately match the required business rule.]
+One thing I noticed was that the AI agent sometimes made assumptions about the data without checking the actual requirements. For example, while working on reference normalization, it suggested treating an invalid reference like "recdirty" as "REC-DIRTY". But when I ran the tests, I noticed that the result was None. I checked the logic and understood that a reference without identifiable digits should not be treated as a valid reference. So I corrected the test instead of changing the implementation just to make it pass.
 
 #### B. Which part of your submission are you least confident about, and why?
-<!-- CANDIDATE PLACEHOLDER: Fill in your specific reflection here before submission -->
-*Placeholder:* [The sorting behavior on split transactions where System B has multiple entries with different dates or locations. Currently, sorting by difference uses the aggregate discrepancy, which is clean for the primary table, but an alternate design could sort sub-entries individually in a dedicated expandable master-detail view.]
+I am not completely confident about sorting when a record has multiple entries in System B. For example, when split transactions have different dates or locations, sorting the combined record may not give users enough detail about the individual entries. The current implementation handles the overall disagreement, but I think there is room to improve how these cases are displayed.
 
 #### C. If you had a second day, what would you fix first?
-<!-- CANDIDATE PLACEHOLDER: Fill in your priority improvements here before submission -->
-*Placeholder:* [I would implement an export feature (CSV/Excel report generation) for the detected disagreements per tenant, along with an interactive manual reconciliation review workflow where users can flag known exceptions or initiate adjustment entries directly from the dashboard.]
+I would first add an option to export the disagreement records into CSV or Excel files. This would help users analyze the results outside the application. After that, I would work on a review feature where users can mark disagreements as reviewed or known exceptions and track which issues have been resolved.
