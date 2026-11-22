@@ -64,6 +64,7 @@ class DataImporter:
         2. system_a.csv
         3. system_b.csv
         """
+        self.summary = CSVImportSummary()
         locations_file = self.data_dir / 'locations.csv'
         system_a_file = self.data_dir / 'system_a.csv'
         system_b_file = self.data_dir / 'system_b.csv'
