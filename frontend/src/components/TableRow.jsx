@@ -7,6 +7,21 @@ const formatCurrency = (val) => {
   return '$' + num.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 };
 
+const formatDifference = (item) => {
+  // Non-monetary disagreements (Location, Date, Voided with equal values) display a dash instead of $0.00
+  const isNonMonetary = ['LOCATION_MISMATCH', 'DATE_MISMATCH', 'VOIDED_RECORD_IN_B'].includes(item.reason);
+  if (isNonMonetary && (!item.difference || Number(item.difference) === 0)) {
+    return '—';
+  }
+  if (item.difference === null || item.difference === undefined || item.difference === '') {
+    return '—';
+  }
+  if (Number(item.difference) === 0 && item.reason !== 'VALUE_MISMATCH' && item.reason !== 'DUPLICATE_IN_B') {
+    return '—';
+  }
+  return formatCurrency(item.difference);
+};
+
 const getReasonBadgeClass = (reason) => {
   switch (reason) {
     case 'MISSING_IN_B':
@@ -71,7 +86,7 @@ export default function TableRow({ item }) {
         )}
       </td>
       <td className="cell-amount cell-diff">
-        {formatCurrency(item.difference)}
+        {formatDifference(item)}
       </td>
       <td className="cell-date">
         {item.a_date || item.b_date ? (

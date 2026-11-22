@@ -35,11 +35,14 @@ class Disagreement:
         """
         Serializes disagreement to dictionary.
         If target_org is provided and this is a cross-tenant disagreement,
-        foreign tenant location details are redacted.
+        foreign tenant location details are redacted across all fields including description.
         """
         b_loc = self.b_location_id
+        desc = self.description
         if self.is_cross_tenant and target_org and self.owning_org == target_org:
             b_loc = "[REDACTED - FOREIGN TENANT]"
+            if self.b_location_id:
+                desc = desc.replace(self.b_location_id, "[REDACTED - FOREIGN TENANT]")
 
         # Format combined location display
         if self.reason == 'LOCATION_MISMATCH':
@@ -51,6 +54,13 @@ class Disagreement:
         else:
             location_display = "Unknown"
 
+        # Non-monetary disagreements without value differences should yield None (dash in UI)
+        diff_str = None
+        if self.difference is not None and self.difference != Decimal('0.00'):
+            diff_str = str(self.difference)
+        elif self.reason in ('VALUE_MISMATCH', 'DUPLICATE_IN_B') and self.difference is not None:
+            diff_str = str(self.difference)
+
         return {
             'reason': self.reason,
             'record_id': self.record_id,
@@ -61,10 +71,10 @@ class Disagreement:
             'b_location': b_loc,
             'a_value': str(self.a_value) if self.a_value is not None else None,
             'b_value': str(self.b_value) if self.b_value is not None else None,
-            'difference': str(self.difference) if self.difference is not None else None,
+            'difference': diff_str,
             'a_date': self.a_date.isoformat() if self.a_date else None,
             'b_date': self.b_date.isoformat() if self.b_date else None,
-            'description': self.description,
+            'description': desc,
             'is_cross_tenant': self.is_cross_tenant,
             'details': self.details,
         }
@@ -177,6 +187,7 @@ def reconcile_records(
                     if b_org and b_org != owning_org:
                         is_cross = True
 
+                void_diff = abs(a_total - b_tot) if (a_total is not None and b_tot is not None and a_total != b_tot) else None
                 disagreements.append(
                     Disagreement(
                         reason='VOIDED_RECORD_IN_B',
@@ -187,7 +198,7 @@ def reconcile_records(
                         b_location_id=b_loc_id,
                         a_value=a_total,
                         b_value=b_tot,
-                        difference=abs(a_total - b_tot) if (a_total is not None and b_tot is not None) else None,
+                        difference=void_diff,
                         a_date=a_date,
                         b_date=_extract(corresponding_b[0], 'recorded_on'),
                         description=f"Record {rec_id} is marked VOIDED in System A, but has active entry in System B ({entry_ids}).",
@@ -363,6 +374,7 @@ def reconcile_records(
 
         # 6.6 LOCATION_MISMATCH
         if a_loc_id and b_loc_id and a_loc_id != b_loc_id:
+            loc_diff = abs(a_total - b_val) if (a_total is not None and b_val is not None and a_total != b_val) else None
             disagreements.append(
                 Disagreement(
                     reason='LOCATION_MISMATCH',
@@ -373,7 +385,7 @@ def reconcile_records(
                     b_location_id=b_loc_id,
                     a_value=a_total,
                     b_value=b_val,
-                    difference=abs(a_total - b_val) if (a_total is not None and b_val is not None) else None,
+                    difference=loc_diff,
                     a_date=a_date,
                     b_date=b_date,
                     description=f"Location mismatch for record {rec_id}: System A at {a_loc_id}, System B at {b_loc_id}.",
@@ -384,6 +396,7 @@ def reconcile_records(
         # 6.7 DATE_MISMATCH
         # Only compare valid parsed dates
         if a_date and b_date and a_date != b_date:
+            date_diff = abs(a_total - b_val) if (a_total is not None and b_val is not None and a_total != b_val) else None
             disagreements.append(
                 Disagreement(
                     reason='DATE_MISMATCH',
@@ -394,7 +407,7 @@ def reconcile_records(
                     b_location_id=b_loc_id,
                     a_value=a_total,
                     b_value=b_val,
-                    difference=abs(a_total - b_val) if (a_total is not None and b_val is not None) else None,
+                    difference=date_diff,
                     a_date=a_date,
                     b_date=b_date,
                     description=f"Date mismatch for record {rec_id}: System A date is {a_date}, System B date is {b_date}.",

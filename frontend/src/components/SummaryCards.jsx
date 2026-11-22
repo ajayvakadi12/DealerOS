@@ -1,6 +1,11 @@
 import React from 'react';
 
 export default function SummaryCards({ summary }) {
+  const otherCount =
+    (summary?.location_mismatch ?? 0) +
+    (summary?.date_mismatch ?? 0) +
+    (summary?.voided_record_in_b ?? 0);
+
   const cards = [
     {
       title: 'Total Disagreements',
@@ -31,6 +36,12 @@ export default function SummaryCards({ summary }) {
       value: summary?.value_mismatch ?? 0,
       className: 'card-value',
       description: 'Amounts do not match total_value'
+    },
+    {
+      title: 'Other Disagreements',
+      value: otherCount,
+      className: 'card-other',
+      description: `Loc: ${summary?.location_mismatch ?? 0} · Date: ${summary?.date_mismatch ?? 0} · Void: ${summary?.voided_record_in_b ?? 0}`
     },
   ];
 

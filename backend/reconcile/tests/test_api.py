@@ -82,6 +82,9 @@ def test_api_cross_tenant_redaction():
     assert len(rec1077) == 1
     assert rec1077[0]['b_location'] == '[REDACTED - FOREIGN TENANT]'
     assert 'LOC-201' not in rec1077[0]['location']
+    assert 'LOC-201' not in rec1077[0]['description']
+    assert 'LOC-201' not in str(response.data)
+    assert rec1077[0]['difference'] is None  # Non-monetary mismatch difference is null (dash in UI)
 
 
 def test_api_summary_metrics():

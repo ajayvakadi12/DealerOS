@@ -122,6 +122,7 @@ body {
 .card-orphan { border-left: 4px solid #9333ea; }
 .card-duplicate { border-left: 4px solid #ea580c; }
 .card-value { border-left: 4px solid #d97706; }
+.card-other { border-left: 4px solid #0284c7; }
 
 /* Content Card */
 .content-card {

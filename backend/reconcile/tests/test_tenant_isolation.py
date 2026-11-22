@@ -59,6 +59,7 @@ def test_cross_tenant_location_redaction():
     assert item['b_location'] == '[REDACTED - FOREIGN TENANT]'
     assert 'LOC-201' not in item['b_location']
     assert 'LOC-201' not in item['location']
+    assert 'LOC-201' not in item['description']
 
     # Confirm ORG-B does not receive REC-1077
     org_b_results = ReconciliationService.get_disagreements_for_tenant('ORG-B')
