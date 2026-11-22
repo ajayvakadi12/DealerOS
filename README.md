@@ -1,5 +1,7 @@
 # DealerOS: Multi-Tenant Data Reconciliation & Disagreement Detection System
 
+Live Demo - https://dealeros-kappa.vercel.app/
+
 A full-stack financial reconciliation platform built to satisfy the **ADOSX Full-Stack Engineering Assessment**.
 
 DealerOS ingests transaction records from two divergent internal sources (**System A** and **System B**), normalizes messy real-world formatting anomalies, executes exact-precision reconciliation comparisons, isolates data strictly across organizational boundaries (**ORG-A** vs **ORG-B**), and surfaces discrepancies through a high-fidelity REST API and React dashboard.
