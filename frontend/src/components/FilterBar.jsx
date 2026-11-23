@@ -18,7 +18,6 @@ export default function FilterBar({
     { value: 'VALUE_MISMATCH', label: 'VALUE_MISMATCH (Amount Discrepancy)' },
     { value: 'LOCATION_MISMATCH', label: 'LOCATION_MISMATCH (Cross/Wrong Location)' },
     { value: 'DATE_MISMATCH', label: 'DATE_MISMATCH (Date Discrepancy)' },
-    { value: 'VOIDED_RECORD_IN_B', label: 'VOIDED_RECORD_IN_B (Active Entry for Void)' },
   ];
 
   const sortOptions = [

@@ -8,8 +8,8 @@ const formatCurrency = (val) => {
 };
 
 const formatDifference = (item) => {
-  // Non-monetary disagreements (Location, Date, Voided with equal values) display a dash instead of $0.00
-  const isNonMonetary = ['LOCATION_MISMATCH', 'DATE_MISMATCH', 'VOIDED_RECORD_IN_B'].includes(item.reason);
+  // Non-monetary disagreements (Location, Date with equal values) display a dash instead of $0.00
+  const isNonMonetary = ['LOCATION_MISMATCH', 'DATE_MISMATCH'].includes(item.reason);
   if (isNonMonetary && (!item.difference || Number(item.difference) === 0)) {
     return '—';
   }
@@ -36,8 +36,6 @@ const getReasonBadgeClass = (reason) => {
       return 'badge-location';
     case 'DATE_MISMATCH':
       return 'badge-date';
-    case 'VOIDED_RECORD_IN_B':
-      return 'badge-voided';
     default:
       return 'badge-default';
   }

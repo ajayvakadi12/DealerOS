@@ -143,6 +143,5 @@ class ReconciliationService:
             'value_mismatch': sum(1 for d in disagreements if d['reason'] == 'VALUE_MISMATCH'),
             'location_mismatch': sum(1 for d in disagreements if d['reason'] == 'LOCATION_MISMATCH'),
             'date_mismatch': sum(1 for d in disagreements if d['reason'] == 'DATE_MISMATCH'),
-            'voided_record_in_b': sum(1 for d in disagreements if d['reason'] == 'VOIDED_RECORD_IN_B'),
         }
         return counts

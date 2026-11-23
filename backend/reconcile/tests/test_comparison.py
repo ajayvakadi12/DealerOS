@@ -171,7 +171,7 @@ def test_value_mismatch_detection(loc_map):
 
 
 def test_blank_b_value_handling(loc_map):
-    """Test 5: Blank B value flagged as VALUE_MISMATCH, not converted to 0."""
+    """Test 5: Blank B value flagged as MISSING_IN_B with difference equal to A total value."""
     a_records = [{
         'record_id': 'REC-1050',
         'location_id': 'LOC-202',
@@ -189,10 +189,10 @@ def test_blank_b_value_handling(loc_map):
     disagreements = reconcile_records(a_records, b_entries, loc_map)
     assert len(disagreements) == 1
     d = disagreements[0]
-    assert d.reason == 'VALUE_MISMATCH'
+    assert d.reason == 'MISSING_IN_B'
     assert d.record_id == 'REC-1050'
     assert d.b_value is None
-    assert d.difference is None  # Unknown, NOT a - 0!
+    assert d.difference == Decimal('160405.85')
 
 
 def test_location_mismatch(loc_map):
@@ -249,10 +249,10 @@ def test_date_mismatch(loc_map):
 def test_voided_record_behavior(loc_map):
     """
     Test 12:
+    - VOIDED record in System A with matching B entry matches cleanly (no voided error flagged).
     - VOIDED record without B entry does not generate MISSING_IN_B.
-    - VOIDED record with active B entry generates VOIDED_RECORD_IN_B.
     """
-    # Case 1: VOIDED with B entry -> VOIDED_RECORD_IN_B
+    # Case 1: VOIDED with matching B entry -> matches cleanly, zero disagreements
     a_voided_with_b = [{
         'record_id': 'REC-1019',
         'location_id': 'LOC-202',
@@ -268,10 +268,8 @@ def test_voided_record_behavior(loc_map):
         'value': Decimal('57092.35'),
     }]
     res1 = reconcile_records(a_voided_with_b, b_active, loc_map)
-    assert len(res1) == 1
-    assert res1[0].reason == 'VOIDED_RECORD_IN_B'
-    assert res1[0].record_id == 'REC-1019'
+    assert len(res1) == 0
 
-    # Case 2: VOIDED without B entry -> NO disagreement generated
+    # Case 2: VOIDED without B entry -> NO disagreement generated (expected cancellation)
     res2 = reconcile_records(a_voided_with_b, [], loc_map)
     assert len(res2) == 0

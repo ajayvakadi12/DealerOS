@@ -46,10 +46,10 @@ This document outlines key technical decisions made during the design and implem
 
 ---
 
-## 7. Explicit Policy for VOIDED Records
-- **Decision**: System A records with `state == 'VOIDED'` do not generate `MISSING_IN_B` if absent in System B; however, if an active entry exists in System B, it generates `VOIDED_RECORD_IN_B`.
-- **Alternative Rejected**: Treating VOIDED records as ordinary confirmed events or ignoring System B activity on voided events.
-- **Reasoning**: A voided record is intentionally cancelled; absence in System B is the expected state. An active System B charge on a voided transaction indicates unauthorized billing or desynchronization that must be flagged.
+## 7. Categorization of Missing System B Values and Voided Records
+- **Decision**: Entries in System B with blank or missing values are categorized as `MISSING_IN_B` (with difference set to System A's `total_value`). In addition, records marked `VOIDED` in System A that have matching entries in System B (e.g., REC-1019) are reconciled by financial value, location, and date rather than flagged as void errors, since System B has no void concept. Cancelled System A records without System B entries do not generate disagreements.
+- **Alternative Rejected**: Flagging missing B values as `VALUE_MISMATCH` with undefined differences, or manufacturing a custom `VOIDED_RECORD_IN_B` error for valid settlement entries.
+- **Reasoning**: A missing value in System B represents an unrecorded or missing financial amount, making `MISSING_IN_B` the accurate category with clear monetary difference. Because System B does not record transaction lifecycle states (like VOIDED), treating identical matching records as errors creates false positives in tenant audits.
 
 ---
 

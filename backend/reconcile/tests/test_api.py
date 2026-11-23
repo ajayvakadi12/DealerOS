@@ -38,7 +38,7 @@ def test_api_valid_org_b_returns_disagreements():
     response = client.get('/api/disagreements/?org=ORG-B')
     assert response.status_code == 200
     assert isinstance(response.data, list)
-    assert len(response.data) == 5
+    assert len(response.data) == 4
     for item in response.data:
         assert item['owning_org'] == 'ORG-B'
 

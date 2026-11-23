@@ -169,46 +169,13 @@ def reconcile_records(
         if rec_id in b_by_ref:
             matched_refs.add(rec_id)
 
-        # 6.8 VOIDED Record Handling Policy:
-        # - VOIDED records should not generate MISSING_IN_B merely because no B entry exists.
-        # - If a VOIDED record has a B entry, generate VOIDED_RECORD_IN_B.
-        # - Do not treat VOIDED records as ordinary confirmed financial reconciliations.
-        if a_state == 'VOIDED':
-            if corresponding_b:
-                entry_ids = ", ".join([str(_extract(b, 'entry_id')) for b in corresponding_b])
-                b_tot = sum(
-                    [_extract(b, 'value') for b in corresponding_b if _extract(b, 'value') is not None],
-                    Decimal('0.00')
-                )
-                b_loc_id = _get_location_id(corresponding_b[0])
-                is_cross = False
-                if b_loc_id and a_loc_id:
-                    b_org = location_org_map.get(b_loc_id)
-                    if b_org and b_org != owning_org:
-                        is_cross = True
-
-                void_diff = abs(a_total - b_tot) if (a_total is not None and b_tot is not None and a_total != b_tot) else None
-                disagreements.append(
-                    Disagreement(
-                        reason='VOIDED_RECORD_IN_B',
-                        record_id=rec_id,
-                        entry_id=entry_ids,
-                        owning_org=owning_org,
-                        a_location_id=a_loc_id,
-                        b_location_id=b_loc_id,
-                        a_value=a_total,
-                        b_value=b_tot,
-                        difference=void_diff,
-                        a_date=a_date,
-                        b_date=_extract(corresponding_b[0], 'recorded_on'),
-                        description=f"Record {rec_id} is marked VOIDED in System A, but has active entry in System B ({entry_ids}).",
-                        is_cross_tenant=is_cross
-                    )
-                )
-            # If VOIDED and no B entry exists, do not generate any disagreement.
+        # VOIDED Record Handling Policy:
+        # System A records marked VOIDED with no B entry do not generate MISSING_IN_B (expected cancellation).
+        # If an entry exists in B, it proceeds to normal comparison (financial/date/location matching).
+        if a_state == 'VOIDED' and not corresponding_b:
             continue
 
-        # 6.1 MISSING_IN_B
+        # 6.1 MISSING_IN_B (No entry at all in System B)
         if not corresponding_b:
             disagreements.append(
                 Disagreement(
@@ -344,16 +311,29 @@ def reconcile_records(
         b_org = location_org_map.get(b_loc_id)
         is_cross_tenant = bool(b_loc_id and a_loc_id and b_org and b_org != owning_org)
 
-        # 6.5 VALUE_MISMATCH
-        # Compare SystemBEntry.value against SystemARecord.total_value (never base_value)
-        # Blank or invalid B values must also be flagged as VALUE_MISMATCH.
-        if b_val is None or a_total is None or b_val != a_total:
-            diff = abs(a_total - b_val) if (a_total is not None and b_val is not None) else None
-            desc = (
-                f"Value mismatch for record {rec_id}: System A total is {a_total}, System B reported {b_val}."
-                if b_val is not None else
-                f"Value mismatch for record {rec_id}: System B has blank/unknown value."
+        # 6.5 Blank or missing value in System B -> MISSING_IN_B
+        if b_val is None:
+            disagreements.append(
+                Disagreement(
+                    reason='MISSING_IN_B',
+                    record_id=rec_id,
+                    entry_id=entry_id,
+                    owning_org=owning_org,
+                    a_location_id=a_loc_id,
+                    b_location_id=b_loc_id,
+                    a_value=a_total,
+                    b_value=None,
+                    difference=a_total,
+                    a_date=a_date,
+                    b_date=b_date,
+                    description=f"Record {rec_id} has value missing in System B (Entry {entry_id}).",
+                    is_cross_tenant=is_cross_tenant
+                )
             )
+        # 6.6 VALUE_MISMATCH
+        # Compare SystemBEntry.value against SystemARecord.total_value (never base_value)
+        elif a_total is None or b_val != a_total:
+            diff = abs(a_total - b_val) if a_total is not None else None
             disagreements.append(
                 Disagreement(
                     reason='VALUE_MISMATCH',
@@ -367,7 +347,7 @@ def reconcile_records(
                     difference=diff,
                     a_date=a_date,
                     b_date=b_date,
-                    description=desc,
+                    description=f"Value mismatch for record {rec_id}: System A total is {a_total}, System B reported {b_val}.",
                     is_cross_tenant=is_cross_tenant
                 )
             )

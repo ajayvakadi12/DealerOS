@@ -156,13 +156,12 @@ The pure Python comparison engine classifies entries into deterministic disagree
 
 | Disagreement Code | Trigger Condition | Example |
 |---|---|---|
-| `MISSING_IN_B` | System A record has no matching System B entry (and is not `VOIDED`). | `REC-1015`, `REC-1061` |
+| `MISSING_IN_B` | System A record has no matching System B entry, or System B entry has missing/blank value. | `REC-1015`, `REC-1050`, `REC-1061` |
 | `ORPHAN_IN_B` | System B entry points to a record not present in System A. | `ENT/2026/4901` (`REC-1999`) |
 | `DUPLICATE_IN_B` | Multiple B entries reference the same A record and do not sum to `total_value`. | `REC-1042` (`ENT/2026/4042` & `ENT/2026/4902`) |
-| `VALUE_MISMATCH` | System B `value` does not match System A `total_value`, or B value is blank/unknown. | `REC-1003` (B matched base_value), `REC-1050` (blank) |
+| `VALUE_MISMATCH` | System B `value` does not match System A `total_value`. | `REC-1003` (B matched base_value), `REC-1064` |
 | `LOCATION_MISMATCH` | System A and System B assign different locations to the same record. | `REC-1077` (A at `LOC-102`, B at `LOC-201`) |
 | `DATE_MISMATCH` | System A `event_date` does not match System B `recorded_on`. | `REC-1009` (`2026-03-31` vs `2026-04-02`) |
-| `VOIDED_RECORD_IN_B` | System A record is `VOIDED`, but System B contains an active entry. | `REC-1019` (`ENT/2026/4019`) |
 
 ### Valid Split Transaction Handling
 If multiple System B entries exist for an A record, and all B values are present with a Decimal sum exactly matching System A's `total_value`, the transaction is accepted as a **`VALID SPLIT`** (a non-error).
@@ -314,16 +313,15 @@ Reconciliation executed against the supplied CSV datasets:
 | **Locations** | 5 | 3 | 2 | LOC-101, 102, 103 (ORG-A); LOC-201, 202 (ORG-B) |
 | **System A Rows** | 120 | 72 | 48 | All rows preserved |
 | **System B Entries** | 121 | 74 | 47 | All entries preserved |
-| **Total Disagreements** | **12** | **7** | **5** | Zero foreign-tenant leakage |
-| &bull; `MISSING_IN_B` | 2 | 1 | 1 | REC-1015 (ORG-A), REC-1061 (ORG-B) |
+| **Total Disagreements** | **11** | **7** | **4** | Zero foreign-tenant leakage |
+| &bull; `MISSING_IN_B` | 3 | 1 | 2 | REC-1015 (ORG-A); REC-1050, REC-1061 (ORG-B) |
 | &bull; `ORPHAN_IN_B` | 1 | 1 | 0 | REC-1999 (ENT/2026/4901 at LOC-102) |
 | &bull; `DUPLICATE_IN_B` | 1 | 1 | 0 | REC-1042 (identical duplicate ENT/2026/4902) |
-| &bull; `VALUE_MISMATCH` | 5 | 3 | 2 | REC-1027, 1064, 1088 (ORG-A); REC-1003, 1050 (ORG-B) |
+| &bull; `VALUE_MISMATCH` | 4 | 3 | 1 | REC-1027, 1064, 1088 (ORG-A); REC-1003 (ORG-B) |
 | &bull; `LOCATION_MISMATCH` | 1 | 1 | 0 | REC-1077 (A: LOC-102, B: LOC-201; Redacted in ORG-A) |
 | &bull; `DATE_MISMATCH` | 1 | 0 | 1 | REC-1009 (A: 2026-03-31, B: 2026-04-02) |
-| &bull; `VOIDED_RECORD_IN_B` | 1 | 0 | 1 | REC-1019 (A: VOIDED, B: ENT/2026/4019 active) |
 | **Valid Splits** | 1 | 1 | 0 | REC-1055 (Sum matches exactly; non-error) |
-| **Clean Matching Records**| 108 | 66 | 42 | In full financial agreement |
+| **Clean Matching Records**| 109 | 66 | 43 | In full financial agreement (including matching REC-1019) |
 
 ---
 
@@ -339,9 +337,9 @@ Reconciliation executed against the supplied CSV datasets:
 
 ### Development Collaboration
 I worked on this project step by step with the help of an AI agent. I didn't just ask it to generate the entire application at once. I first understood the data and then worked on each part separately.
-1. Understanding the data: Before starting the implementation, I checked the CSV files using Python to understand what kind of data they contained and what problems needed to be handled. I found issues like different number formats, inconsistent references, blank values, duplicate entries and split transactions.
-2. Building the logic separately: I worked on the comparison logic in reconcile/comparison.py separately from the Django API. This made it easier to understand the business rules and test them without depending on the frontend or API.
-3. Testing along the way: After implementing each major part, I ran the tests and checked the results. I paid particular attention to financial calculations and used Decimal values to avoid floating-point accuracy issues.
+1. **Understanding the data**: Before starting the implementation, I checked the CSV files using Python to understand what kind of data they contained and what problems needed to be handled. I found issues like different number formats, inconsistent references, blank values, duplicate entries and split transactions.
+2. **Building the logic separately**: I worked on the comparison logic in `reconcile/comparison.py` separately from the Django API. This made it easier to understand the business rules and test them without depending on the frontend or API.
+3. **Testing along the way**: After implementing each major part, I ran the tests and checked the results. I paid particular attention to financial calculations and used Decimal values to avoid floating-point accuracy issues.
 
 ### Assessment Questions
 
